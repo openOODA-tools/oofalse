@@ -1,0 +1,14 @@
+Source: oofalse
+Section: utils
+Priority: optional
+Maintainer: openOODA-tools <ops@openooda.org>
+Standards-Version: 4.6.2
+Build-Depends: debhelper-compat (= 13)
+
+Package: oofalse
+Architecture: amd64
+Depends: libc6
+Description: NO-OP FAILURE
+ Instant zero-byte binary returning exit status 1 without runtime overhead.
+ Capability-bounded openOODA utility with zero ambient authority,
+ oote theme palettes, and native Model Context Protocol (MCP) surface.
