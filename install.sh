@@ -4,7 +4,7 @@
 # "Instant zero-byte binary returning exit status 1 without runtime overhead."
 #
 # Usage:
-#   curl -fsSL https://openooda-toofalse.github.io/oofalse/install.sh | bash
+#   curl -fsSL https://openooda-tools.github.io/oofalse/install.sh | bash
 #
 # Options:
 #   --prefix <dir>       Installation directory (default: /usr/local/bin or ~/.local/bin)
@@ -18,10 +18,10 @@
 
 set -eu
 
-REPO="openOODA-toofalse/oofalse"
+REPO="openOODA-tools/oofalse"
 GITHUB_URL="https://github.com/${REPO}"
-VERSION_PIN="v0.1.0"
-RAW_VERSION="0.1.0"
+VERSION_PIN="v0.2.0"
+RAW_VERSION="0.2.0"
 
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ] && [ "${TERM:-dumb}" != "dumb" ]; then
     CYAN="\033[38;5;51m"

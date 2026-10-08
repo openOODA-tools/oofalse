@@ -1,14 +1,10 @@
-Source: oofalse
+Package: oofalse
+Version: 0.2.0-1
 Section: utils
 Priority: optional
-Maintainer: openOODA-tools <ops@openooda.org>
-Standards-Version: 4.6.2
-Build-Depends: debhelper-compat (= 13)
-
-Package: oofalse
 Architecture: amd64
-Depends: libc6
-Description: Sovereign POSIX false utility and deterministic exit code analyzer
+Maintainer: openOODA-tools <ops@openooda.org>
+Description: Sovereign POSIX false utility and deterministic exit code analyzer in pure openOODA.
  Instant zero-byte binary returning exit status 1 without runtime overhead.
  Capability-bounded openOODA utility with zero ambient authority,
  exit code diagnostics, pipeline simulation, and a streaming Model Context Protocol (MCP) server.

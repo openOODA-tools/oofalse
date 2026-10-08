@@ -4,7 +4,7 @@
 # "Removes oofalse binary, package installations, and cache."
 #
 # Usage:
-#   curl -fsSL https://openooda-toofalse.github.io/oofalse/uninstall.sh | bash
+#   curl -fsSL https://openooda-tools.github.io/oofalse/uninstall.sh | bash
 #   or: ./uninstall.sh [options]
 #
 # Options:

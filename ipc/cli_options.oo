@@ -1,0 +1,77 @@
+// # POSIX CLI Option Parser
+//
+// Logline: Option parsing and dispatch mapping POSIX false semantics and diagnostic flags.
+//
+// Setup: Pure argument scanning and option structure assembly with zero ambient authority.
+//
+// Beats:
+//   1. Declare FalseOpts configuration structure.
+//   2. Parse help, version, and MCP stdio server switches.
+//   3. Parse custom failure code, error message, and JSON output options.
+//   4. Deliver populated FalseOpts structure for pipeline dispatch.
+
+import "ipc/json_field.oo";
+
+pub type FalseOpts = struct {
+    show_help: Bool,
+    show_version: Bool,
+    mcp_mode: Bool,
+    test_mode: Bool,
+    demo_mode: Bool,
+    explain_mode: Bool,
+    json_mode: Bool,
+    exit_code: Int,
+    message: String
+};
+
+pub fn default_false_opts() -> FalseOpts {
+    return FalseOpts {
+        show_help: false,
+        show_version: false,
+        mcp_mode: false,
+        test_mode: false,
+        demo_mode: false,
+        explain_mode: false,
+        json_mode: false,
+        exit_code: 1,
+        message: ""
+    };
+}
+
+pub fn parse_cli_args(args: List[String]) -> FalseOpts {
+    let mut opts: FalseOpts = default_false_opts();
+    let num_args: Int = list_len(args);
+    let mut i: Int = 0;
+
+    while i < num_args {
+        let arg: String = list_get(args, i);
+
+        if arg == "-h" || arg == "--help" {
+            opts.show_help = true;
+            return opts;
+        } else if arg == "-v" || arg == "--version" {
+            opts.show_version = true;
+            return opts;
+        } else if arg == "--mcp" {
+            opts.mcp_mode = true;
+        } else if arg == "--test" {
+            opts.test_mode = true;
+        } else if arg == "-D" || arg == "--demo" {
+            opts.demo_mode = true;
+        } else if arg == "-e" || arg == "--explain" {
+            opts.explain_mode = true;
+        } else if arg == "-j" || arg == "--json" {
+            opts.json_mode = true;
+        } else if (arg == "-c" || arg == "--code") && i + 1 < num_args {
+            i = i + 1;
+            let code_arg: String = list_get(args, i);
+            opts.exit_code = parse_int_safe(code_arg, 1);
+        } else if (arg == "-m" || arg == "--message") && i + 1 < num_args {
+            i = i + 1;
+            opts.message = list_get(args, i);
+        }
+        i = i + 1;
+    }
+
+    return opts;
+}

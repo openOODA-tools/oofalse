@@ -1,0 +1,78 @@
+// # Render Subsystem Anchor
+//
+// Logline: Unit tests for text and JSON rendering routines.
+//
+// Setup: Pure verification of formatting layouts without terminal or disk I/O.
+//
+// Beats:
+//   1. Validate CLI help and version text rendering.
+//   2. Validate exit code reference table layout.
+//   3. Validate failure JSON generation and escaping.
+
+import "render/render_text.oo";
+import "render/render_json.oo";
+
+fn str_contains(s: String, needle: String) -> Bool {
+    let n_len: Int = chars_len(needle);
+    let s_len: Int = chars_len(s);
+    if n_len > s_len {
+        return false;
+    }
+    let mut i: Int = 0;
+    while i + n_len <= s_len {
+        if str_slice(s, i, i + n_len) == needle {
+            return true;
+        }
+        i = i + 1;
+    }
+    return false;
+}
+
+fn test_render_text() -> Bool {
+    let help_txt: String = render_help();
+    if !str_contains(help_txt, "oofalse 0.2.0") {
+        return false;
+    }
+    let ver_txt: String = render_version();
+    if !str_contains(ver_txt, "0.2.0") {
+        return false;
+    }
+    let tbl_txt: String = render_exit_code_table();
+    if !str_contains(tbl_txt, "GENERAL_ERROR") {
+        return false;
+    }
+    let demo_txt: String = render_demo();
+    if !str_contains(demo_txt, "Showcase") {
+        return false;
+    }
+    return true;
+}
+
+fn test_render_json() -> Bool {
+    let fail_json: String = render_failure_json(1, "test failure");
+    if !str_contains(fail_json, "\"exit_code\": 1") {
+        return false;
+    }
+    if !str_contains(fail_json, "\"status\": \"failed\"") {
+        return false;
+    }
+    let code_json: String = render_exit_code_json(130);
+    if !str_contains(code_json, "\"signal\": 2") {
+        return false;
+    }
+    let sim_json: String = render_simulation_json(1);
+    if !str_contains(sim_json, "\"errexit\":") {
+        return false;
+    }
+    return true;
+}
+
+fn run_render_tests() -> Bool {
+    if !test_render_text() {
+        return false;
+    }
+    if !test_render_json() {
+        return false;
+    }
+    return true;
+}

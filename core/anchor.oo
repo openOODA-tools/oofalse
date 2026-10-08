@@ -1,0 +1,80 @@
+// # Core Subsystem Anchor
+//
+// Logline: Unit tests for exit code classification, signal mappings, and pipeline simulation.
+//
+// Setup: Pure test suite validating core invariants without ambient side-effects.
+//
+// Beats:
+//   1. Verify exit code name and category resolution.
+//   2. Verify signal calculation offsets for fatal exit statuses.
+//   3. Verify pipeline simulation diagnostics for POSIX shells.
+
+import "core/exit_codes.oo";
+import "core/false_engine.oo";
+
+fn str_contains(s: String, needle: String) -> Bool {
+    let n_len: Int = chars_len(needle);
+    let s_len: Int = chars_len(s);
+    if n_len > s_len {
+        return false;
+    }
+    let mut i: Int = 0;
+    while i + n_len <= s_len {
+        if str_slice(s, i, i + n_len) == needle {
+            return true;
+        }
+        i = i + 1;
+    }
+    return false;
+}
+
+fn test_exit_codes() -> Bool {
+    let name_success: String = exit_code_name(0);
+    if !str_contains(name_success, "SUCCESS") {
+        return false;
+    }
+    let name_general: String = exit_code_name(1);
+    if !str_contains(name_general, "GENERAL_ERROR") {
+        return false;
+    }
+    let name_sigint: String = exit_code_name(130);
+    if !str_contains(name_sigint, "SIGINT") {
+        return false;
+    }
+    if !is_fatal_signal(137) {
+        return false;
+    }
+    if signal_number(137) != 9 {
+        return false;
+    }
+    if signal_number(1) != 0 {
+        return false;
+    }
+    return true;
+}
+
+fn test_pipeline_engine() -> Bool {
+    let err_msg: String = simulate_errexit(1);
+    if !str_contains(err_msg, "ABORT") {
+        return false;
+    }
+    let or_msg: String = simulate_short_circuit_or(1);
+    if !str_contains(or_msg, "TRIGGER") {
+        return false;
+    }
+    let summary: String = make_failure_summary(1, "test abort");
+    if !str_contains(summary, "test abort") {
+        return false;
+    }
+    return true;
+}
+
+fn run_core_tests() -> Bool {
+    if !test_exit_codes() {
+        return false;
+    }
+    if !test_pipeline_engine() {
+        return false;
+    }
+    return true;
+}

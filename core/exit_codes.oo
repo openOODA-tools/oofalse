@@ -1,0 +1,120 @@
+// # POSIX Exit Code Subsystem
+//
+// Logline: POSIX and Unix exit status code registry, categories, and signal mapping.
+//
+// Setup: Pure numerical mappings adhering to POSIX IEEE Std 1003.1 and Linux conventions.
+//
+// Beats:
+//   1. Resolve human-readable symbolic names for standard exit status values.
+//   2. Categorize exit codes by POSIX failure domain.
+//   3. Compute signal numbers for fatal signal offsets (128 + N).
+//   4. Provide descriptive failure explanations for error diagnostics.
+
+fn exit_code_name(code: Int) -> String {
+    if code == 0 {
+        return "SUCCESS (EXIT_SUCCESS)";
+    }
+    if code == 1 {
+        return "GENERAL_ERROR (Catchall for general errors)";
+    }
+    if code == 2 {
+        return "BUILTIN_MISUSE (Misuse of shell builtins or syntax)";
+    }
+    if code == 126 {
+        return "COMMAND_CANNOT_EXECUTE (Permission problem or not executable)";
+    }
+    if code == 127 {
+        return "COMMAND_NOT_FOUND (Possible PATH error or missing executable)";
+    }
+    if code == 128 {
+        return "INVALID_EXIT_ARGUMENT (Exit argument out of range 0-255)";
+    }
+    if code == 130 {
+        return "FATAL_SIGINT (Script terminated by Ctrl-C / Signal 2)";
+    }
+    if code == 137 {
+        return "FATAL_SIGKILL (Script killed by kill -9 or OOM killer / Signal 9)";
+    }
+    if code == 139 {
+        return "FATAL_SIGSEGV (Segmentation violation / Signal 11)";
+    }
+    if code == 141 {
+        return "FATAL_SIGPIPE (Broken pipe / Signal 13)";
+    }
+    if code == 143 {
+        return "FATAL_SIGTERM (Gracefully terminated by process supervisor / Signal 15)";
+    }
+    if code == 255 {
+        return "EXIT_STATUS_OUT_OF_RANGE";
+    }
+    if code > 128 && code <= 192 {
+        let sig: Int = code - 128;
+        return "FATAL_SIGNAL_" + sig.to_string() + " (128 + Signal " + sig.to_string() + ")";
+    }
+    return "USER_DEFINED_EXIT_CODE_" + code.to_string();
+}
+
+fn exit_code_category(code: Int) -> String {
+    if code == 0 {
+        return "Success";
+    }
+    if code == 1 || code == 2 {
+        return "Standard POSIX Failure";
+    }
+    if code >= 3 && code <= 125 {
+        return "Application Specific Error";
+    }
+    if code >= 126 && code <= 128 {
+        return "Shell Execution Failure";
+    }
+    if code >= 129 && code <= 192 {
+        return "Fatal Signal Offset (128+N)";
+    }
+    return "Extended Range Exit Status";
+}
+
+fn exit_code_description(code: Int) -> String {
+    if code == 0 {
+        return "Command completed successfully without errors.";
+    }
+    if code == 1 {
+        return "Command failed with general operational error (default false status).";
+    }
+    if code == 2 {
+        return "Shell built-in command was misused or parsed invalid syntax options.";
+    }
+    if code == 126 {
+        return "Target command was located but permissions or file format prevented execution.";
+    }
+    if code == 127 {
+        return "Target executable was not found in PATH or directory.";
+    }
+    if code == 130 {
+        return "Interrupted by user via SIGINT (Ctrl+C keyboard interrupt).";
+    }
+    if code == 137 {
+        return "Forcefully terminated by kernel SIGKILL (e.g. system out-of-memory).";
+    }
+    if code == 139 {
+        return "Memory segmentation fault encountered by executable process.";
+    }
+    if code == 143 {
+        return "Termination request received via SIGTERM from systemd or supervisor.";
+    }
+    if code > 128 && code <= 192 {
+        let sig_num: Int = code - 128;
+        return "Process was killed by fatal POSIX signal number " + sig_num.to_string() + ".";
+    }
+    return "Custom exit code returned indicating non-zero execution failure.";
+}
+
+fn is_fatal_signal(code: Int) -> Bool {
+    return code >= 129 && code <= 192;
+}
+
+fn signal_number(code: Int) -> Int {
+    if code > 128 && code <= 192 {
+        return code - 128;
+    }
+    return 0;
+}

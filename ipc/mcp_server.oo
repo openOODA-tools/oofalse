@@ -1,0 +1,163 @@
+// # Streaming MCP Server for Sovereign Failure
+//
+// Logline: JSON-RPC 2.0 stdio server providing sovereign exit code analysis and pipeline failure simulation.
+//
+// Setup: Bridges standard input/output streaming protocol to exit code catalogs and simulation engines.
+//
+// Beats:
+//   1. Handle MCP initialize handshake with server metadata and capability declarations.
+//   2. Expose tools/list catalogue with five sovereign exit code tools.
+//   3. Dispatch tools/call for false_eval, exit_code, assert, simulate, and demo.
+//   4. Deliver streaming JSON-RPC responses over standard output.
+
+import "render/render_text.oo";
+import "render/render_json.oo";
+import "ipc/json_field.oo";
+
+fn build_error(id: String, code: Int, msg: String) -> String {
+    return "{\"jsonrpc\":\"2.0\",\"id\":" + id + ",\"error\":{\"code\":"
+        + code.to_string() + ",\"message\":\"" + json_escape(msg) + "\"}}\n";
+}
+
+fn build_tool_result(id: String, text: String) -> String {
+    return "{\"jsonrpc\":\"2.0\",\"id\":" + id + ",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\""
+        + json_escape(text) + "\"}]}}\n";
+}
+
+pub fn render_mcp_init(id: String) -> String {
+    return "{\"jsonrpc\":\"2.0\",\"id\":" + id
+        + ",\"result\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"oofalse\",\"version\":\"0.2.0\"}}}\n";
+}
+
+pub fn render_mcp_tools_list(id: String) -> String {
+    let mut out: String = "{\"jsonrpc\":\"2.0\",\"id\":" + id + ",\"result\":{\"tools\":[";
+    out = out + "{\"name\":\"false_eval\",\"description\":\"Evaluates failure exit status under POSIX rules.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"integer\"},\"message\":{\"type\":\"string\"}}}}";
+    out = out + ",{\"name\":\"false_exit_code\",\"description\":\"Queries POSIX exit code meaning, failure domain, and fatal signal mapping.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"integer\"}}}}";
+    out = out + ",{\"name\":\"false_assert\",\"description\":\"Asserts that a condition is false; verifies failure expectations.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"condition\":{\"type\":\"boolean\"},\"message\":{\"type\":\"string\"}}}}";
+    out = out + ",{\"name\":\"false_simulate\",\"description\":\"Simulates shell pipeline failure propagation under errexit and pipefail.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"integer\"}}}}";
+    out = out + ",{\"name\":\"false_demo\",\"description\":\"Runs interactive failure semantics showcase.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"json_mode\":{\"type\":\"boolean\"}}}}";
+    out = out + "]}}\n";
+    return out;
+}
+
+pub fn handle_mcp_call(id: String, tool_name: String, req: String) -> String {
+    if tool_name == "false_demo" {
+        let json_mode: Bool = json_extract_bool_field(req, "json_mode", false);
+        let out: String = if json_mode {
+            render_simulation_json(1)
+        } else {
+            render_demo()
+        };
+        return build_tool_result(id, out);
+    }
+
+    if tool_name == "false_eval" {
+        let code_val: Int = json_extract_int_field(req, "code", 1);
+        let msg_val: String = json_extract_str_field(req, "message");
+        let out: String = render_failure_json(code_val, msg_val);
+        return build_tool_result(id, out);
+    }
+
+    if tool_name == "false_exit_code" {
+        let target_code: Int = json_extract_int_field(req, "code", 1);
+        let out: String = render_exit_code_json(target_code);
+        return build_tool_result(id, out);
+    }
+
+    if tool_name == "false_assert" {
+        let cond_val: Bool = json_extract_bool_field(req, "condition", false);
+        let assert_msg: String = json_extract_str_field(req, "message");
+        if !cond_val {
+            let pass_out: String = "ASSERTION_PASSED: Target condition evaluated to false (expected failure).";
+            return build_tool_result(id, pass_out);
+        } else {
+            let mut fail_out: String = "ASSERTION_FAILED: Target condition evaluated to true (expected false).";
+            if chars_len(assert_msg) > 0 {
+                fail_out = fail_out + " Message: " + assert_msg;
+            }
+            return build_tool_result(id, fail_out);
+        }
+    }
+
+    if tool_name == "false_simulate" {
+        let sim_code: Int = json_extract_int_field(req, "code", 1);
+        let out: String = render_simulation_json(sim_code);
+        return build_tool_result(id, out);
+    }
+
+    return build_error(id, -32601, "Method or tool not found: " + tool_name);
+}
+
+pub fn handle_mcp_message(req: String) -> String {
+    let id_str: String = json_extract_str_field(req, "id");
+    let id_int: Int = json_extract_int_field(req, "id", -1);
+    let id: String = if chars_len(id_str) > 0 {
+        "\"" + id_str + "\""
+    } else if id_int >= 0 {
+        id_int.to_string()
+    } else {
+        "1"
+    };
+    let method: String = json_extract_str_field(req, "method");
+
+    if method == "initialize" {
+        return render_mcp_init(id);
+    }
+    if method == "notifications/initialized" {
+        return "";
+    }
+    if method == "tools/list" {
+        return render_mcp_tools_list(id);
+    }
+    if method == "tools/call" {
+        let tool_name: String = json_extract_str_field(req, "name");
+        return handle_mcp_call(id, tool_name, req);
+    }
+    if method == "shutdown" {
+        return "{\"jsonrpc\":\"2.0\",\"id\":" + id + ",\"result\":null}\n";
+    }
+    return build_error(id, -32601, "Method not found: " + method);
+}
+
+fn find_newline_pos(s: String) -> Int {
+    let n: Int = chars_len(s);
+    let mut i: Int = 0;
+    while i < n {
+        if byte_at(s, i) == 10 {
+            return i;
+        }
+        i = i + 1;
+    }
+    return -1;
+}
+
+pub fn run_mcp_server(fr: &FsReadCap) {
+    let mut buf: String = "";
+    let mut running: Bool = true;
+    while running {
+        let r: Result[String, String] = oo_read_stdin_chunk(fr, 4096);
+        if !r.is_ok() {
+            running = false;
+        } else {
+            let chunk: String = match r { Ok(s) => s, Err(_) => "" };
+            if chars_len(chunk) == 0 {
+                running = false;
+            } else {
+                buf = buf + chunk;
+                let mut nl_pos: Int = find_newline_pos(buf);
+                while nl_pos >= 0 {
+                    let line: String = str_slice(buf, 0, nl_pos);
+                    buf = str_slice(buf, nl_pos + 1, chars_len(buf));
+                    let trimmed: String = str_trim(line);
+                    if chars_len(trimmed) > 0 {
+                        let resp: String = handle_mcp_message(trimmed);
+                        if chars_len(resp) > 0 {
+                            print(resp);
+                        }
+                    }
+                    nl_pos = find_newline_pos(buf);
+                }
+            }
+        }
+    }
+}

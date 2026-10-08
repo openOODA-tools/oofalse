@@ -1,32 +1,27 @@
 // # oofalse Main Entry Point
 //
-// Logline: Instant zero-byte binary returning exit status 1 without runtime overhead.
+// Logline: Sovereign NO-OP FAILURE utility with zero overhead, exit semantics, and streaming MCP.
 //
-// Setup: Demands explicit capability tokens and standard argument list.
+// Setup: Demands explicit capability tokens &FsReadCap, &ProcessCap, and &EnvCap under zero ambient authority.
 //
 // Beats:
-//   1. Parse command-line options and dispatch --help, --version, or --mcp.
-//   2. Execute capability-bounded oofalse operations.
-//   3. Format and output structured results to standard output.
+//   1. Parse command-line options and dispatch --help, --version, --test, or --mcp.
+//   2. Route synthetic showcase requests for --demo and --explain execution.
+//   3. Format and output structured failure diagnostics as text or JSON.
+//   4. Deliver deterministic non-zero exit status (default: 1) under standard POSIX false semantics.
 
-fn render_help() -> String {
-    return "oofalse 0.1.0 (openOODA sovereign shell & terminal)\n"
-        + "usage: oofalse [options] [ARGUMENTS]...\n\n"
-        + "Instant zero-byte binary returning exit status 1 without runtime overhead.\n\n"
-        + "Options:\n"
-        + "  -h, --help           display this help and exit\n"
-        + "  -v, --version        output version information and exit\n"
-        + "      --json           output formatted as JSON Lines\n"
-        + "      --color <WHEN>   colorize output: auto, always, never [default: auto]\n"
-        + "      --theme <NAME>   override active oote palette\n"
-        + "      --mcp            run as Model Context Protocol stdio server\n";
-}
+import "render/render_text.oo";
+import "render/render_json.oo";
+import "ipc/cli_options.oo";
+import "ipc/mcp_server.oo";
+import "anchor.oo";
 
-fn render_version() -> String {
-    return "oofalse 0.1.0 (openOODA sovereign shell & terminal)\n";
-}
-
-fn main(args: List[String]) -> Int {
+pub fn main(
+    fr: &FsReadCap,
+    _pr: &ProcessCap,
+    _env: &EnvCap,
+    args: List[String]
+) -> Int {
     let num_args: Int = list_len(args);
     let mut i: Int = 0;
 
@@ -40,13 +35,52 @@ fn main(args: List[String]) -> Int {
             print(render_version());
             return 0;
         }
+        if arg == "--test" {
+            if run_all_tests() {
+                print("oofalse: internal anchor tests PASSED\n");
+                return 0;
+            } else {
+                print("oofalse: internal anchor tests FAILED\n");
+                return 1;
+            }
+        }
         if arg == "--mcp" {
-            print("{\"jsonrpc\":\"2.0\",\"result\":{\"status\":\"ready\",\"tool\":\"oofalse\"}}\n");
+            run_mcp_server(fr);
             return 0;
         }
         i = i + 1;
     }
 
-    print("oofalse: sovereign capability-bounded utility ready\n");
-    return 0;
+    let opts: FalseOpts = parse_cli_args(args);
+
+    if opts.show_help {
+        print(render_help());
+        return 0;
+    }
+    if opts.show_version {
+        print(render_version());
+        return 0;
+    }
+    if opts.demo_mode {
+        if opts.json_mode {
+            print(render_simulation_json(opts.exit_code));
+        } else {
+            print(render_demo());
+        }
+        return opts.exit_code;
+    }
+    if opts.explain_mode {
+        print(render_exit_code_table());
+        return opts.exit_code;
+    }
+    if opts.json_mode {
+        print(render_failure_json(opts.exit_code, opts.message));
+        return opts.exit_code;
+    }
+    if chars_len(opts.message) > 0 {
+        print("oofalse: " + opts.message + "\n");
+        return opts.exit_code;
+    }
+
+    return opts.exit_code;
 }

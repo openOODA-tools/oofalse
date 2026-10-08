@@ -1,0 +1,63 @@
+// # Sovereign Failure Engine
+//
+// Logline: Execution simulator, pipeline semantics evaluator, and diagnostic generator.
+//
+// Setup: Pure logic analyzing POSIX pipeline behaviors and exit code propagation.
+//
+// Beats:
+//   1. Simulate shell pipeline failure cascades under errexit (set -e).
+//   2. Evaluate logical short-circuit consequences for AND (&&) and OR (||).
+//   3. Format deterministic failure diagnostic summaries.
+
+import "core/exit_codes.oo";
+
+fn simulate_errexit(code: Int) -> String {
+    if code == 0 {
+        return "PASS: Script execution proceeds uninterrupted under 'set -e'.";
+    }
+    return "ABORT: Shell terminates immediate execution at this command under 'set -e'.";
+}
+
+fn simulate_short_circuit_and(code: Int) -> String {
+    if code == 0 {
+        return "EXEC: Right-hand command (cmd2) in 'cmd1 && cmd2' WILL execute.";
+    }
+    return "SKIP: Right-hand command (cmd2) in 'cmd1 && cmd2' is SHORT-CIRCUITED and skipped.";
+}
+
+fn simulate_short_circuit_or(code: Int) -> String {
+    if code == 0 {
+        return "SKIP: Right-hand fallback (cmd2) in 'cmd1 || cmd2' is NOT executed.";
+    }
+    return "TRIGGER: Right-hand fallback (cmd2) in 'cmd1 || cmd2' IS EXECUTED to handle failure.";
+}
+
+fn simulate_pipefail(code: Int) -> String {
+    if code == 0 {
+        return "PASS: Pipeline stage returns 0; pipeline status unaffected.";
+    }
+    return "CONTAMINATE: With 'set -o pipefail', entire pipeline exit status becomes "
+        + code.to_string() + ".";
+}
+
+fn simulate_trap_err(code: Int) -> String {
+    if code == 0 {
+        return "IDLE: 'trap ... ERR' is not triggered.";
+    }
+    return "FIRE: Shell executes registered ERR trap handler for exit status "
+        + code.to_string() + ".";
+}
+
+fn make_failure_summary(code: Int, custom_msg: String) -> String {
+    let name: String = exit_code_name(code);
+    let cat: String = exit_code_category(code);
+    let desc: String = exit_code_description(code);
+    let mut out: String = "STATUS: FAILURE (Exit Code " + code.to_string() + ")\n"
+        + "SYMBOL: " + name + "\n"
+        + "DOMAIN: " + cat + "\n"
+        + "DETAIL: " + desc + "\n";
+    if chars_len(custom_msg) > 0 {
+        out = out + "MESSAGE: " + custom_msg + "\n";
+    }
+    return out;
+}

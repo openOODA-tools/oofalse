@@ -1,0 +1,79 @@
+// # Sovereign Text Rendering Subsystem
+//
+// Logline: Formats terminal help, version, exit code tables, and failure demos.
+//
+// Setup: Pure string layout formatting adhering to standard CLI terminal conventions.
+//
+// Beats:
+//   1. Render standard POSIX usage and help diagnostics.
+//   2. Render tool version and openOODA platform metadata.
+//   3. Render tabular reference of POSIX and Unix exit codes.
+//   4. Render interactive failure mode demonstration.
+
+import "core/exit_codes.oo";
+import "core/false_engine.oo";
+
+fn render_help() -> String {
+    return "oofalse 0.2.0 (openOODA sovereign shell & terminal)\n"
+        + "usage: oofalse [options] [ARGUMENTS]...\n\n"
+        + "Sovereign NO-OP FAILURE utility with deterministic exit code semantics.\n"
+        + "When invoked without diagnostic options, executes zero ops and exits with status 1.\n\n"
+        + "Options:\n"
+        + "  -h, --help           display this help and exit (exit 0)\n"
+        + "  -v, --version        output version information and exit (exit 0)\n"
+        + "  -c, --code <CODE>    exit with custom status code (default: 1)\n"
+        + "  -m, --message <MSG>  write failure explanation to stderr before exiting\n"
+        + "  -e, --explain        print POSIX exit status code reference table\n"
+        + "  -j, --json           output failure metadata as JSON to stdout\n"
+        + "  -D, --demo           run interactive failure and pipeline showcase\n"
+        + "      --test           execute internal subsystem verification suite\n"
+        + "      --mcp            run as Model Context Protocol JSON-RPC stdio server\n";
+}
+
+fn render_version() -> String {
+    return "oofalse 0.2.0 (openOODA sovereign shell & terminal)\n"
+        + "License: Apache License 2.0 (zero ambient authority)\n"
+        + "Architecture: x86_64 / aarch64 native binary\n";
+}
+
+fn render_exit_code_table() -> String {
+    let mut out: String = "================================================================================\n"
+        + "                      POSIX & UNIX EXIT STATUS CODE MATRIX\n"
+        + "================================================================================\n"
+        + " CODE | SYMBOLIC NAME                   | MEANING / TYPICAL CAUSE\n"
+        + "------+---------------------------------+---------------------------------------\n"
+        + "    0 | SUCCESS                         | Normal completion / no error\n"
+        + "    1 | GENERAL_ERROR                   | Catchall for general failure (oofalse)\n"
+        + "    2 | BUILTIN_MISUSE                  | Misuse of shell builtins / syntax error\n"
+        + "  126 | COMMAND_CANNOT_EXECUTE          | Permission denied / not executable\n"
+        + "  127 | COMMAND_NOT_FOUND               | Executable not found in PATH\n"
+        + "  128 | INVALID_EXIT_ARGUMENT           | Exit code argument out of range\n"
+        + "  130 | FATAL_SIGINT (128 + 2)          | Process terminated by Ctrl+C\n"
+        + "  137 | FATAL_SIGKILL (128 + 9)         | Forcefully killed or OOM reaper\n"
+        + "  139 | FATAL_SIGSEGV (128 + 11)        | Segmentation fault / invalid memory\n"
+        + "  141 | FATAL_SIGPIPE (128 + 13)        | Broken pipe (reader closed)\n"
+        + "  143 | FATAL_SIGTERM (128 + 15)        | Termination request from supervisor\n"
+        + "  255 | OUT_OF_RANGE                    | Exit status truncated / out of bounds\n"
+        + "================================================================================\n";
+    return out;
+}
+
+fn render_demo() -> String {
+    let mut out: String = "================================================================================\n"
+        + "                 oofalse Sovereign Failure Semantics Showcase\n"
+        + "================================================================================\n\n"
+        + "1. POSIX Baseline Behavior:\n"
+        + "   $ oofalse\n"
+        + "   $ echo $? -> 1 (zero-overhead failure)\n\n"
+        + "2. Pipeline Execution Dynamics (Exit Code 1):\n"
+        + "   * " + simulate_errexit(1) + "\n"
+        + "   * " + simulate_short_circuit_and(1) + "\n"
+        + "   * " + simulate_short_circuit_or(1) + "\n"
+        + "   * " + simulate_pipefail(1) + "\n\n"
+        + "3. Fatal Signal Offset Diagnostics (Exit Code 137 / SIGKILL):\n"
+        + "   * Symbolic: " + exit_code_name(137) + "\n"
+        + "   * Domain:   " + exit_code_category(137) + "\n"
+        + "   * " + simulate_errexit(137) + "\n\n"
+        + "================================================================================\n";
+    return out;
+}
